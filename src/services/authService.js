@@ -16,11 +16,25 @@ export const authService = {
     return api.get('/me')
   },
 
+  updateProfile(payload) {
+    return api.patch('/profile', payload)
+  },
+
   verifyToken() {
     return api.get('/verify-token', {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
       },
+    })
+  },
+
+  resendVerificationEmail() {
+    return api.post('/email/verification-notification')
+  },
+
+  verifyEmail(id, hash, params) {
+    return api.get(`/email/verify/${id}/${hash}`, {
+      params,
     })
   },
 

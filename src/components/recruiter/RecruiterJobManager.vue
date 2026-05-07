@@ -1,11 +1,15 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
 
+import EmptyState from '@/components/baseui/EmptyState.vue'
+import PageHeader from '@/components/baseui/PageHeader.vue'
+import CreateCompanyNotice from '@/components/recruiter/CreateCompanyNotice.vue'
+import RecruiterJobCard from '@/components/recruiter/RecruiterJobCard.vue'
+import RecruiterJobForm from '@/components/recruiter/RecruiterJobForm.vue'
 import CardSkeleton from '@/components/skeletons/CardSkeleton.vue'
 import { useJobPortal } from '@/composables/useJobPortal'
-import { confirmAction } from '@/utils/sweetAlert'
+import { confirmAction } from '@/utils/confirmToast'
 
 const {
   addRecruiterJob,
@@ -144,166 +148,39 @@ onMounted(async () => {
 
 <template>
   <section class="space-y-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Manage Jobs</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Add draft jobs or publish them when they are ready for users.
-        </p>
-      </div>
-
+    <PageHeader
+      title="Manage Jobs"
+      description="Add draft jobs or publish them when they are ready for users."
+    >
       <div class="rounded-xl bg-white px-4 py-3 shadow-sm dark:bg-gray-900">
         <p class="text-sm text-gray-500 dark:text-gray-400">Published</p>
         <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ publishedCount }}</p>
       </div>
-    </div>
+    </PageHeader>
 
     <CardSkeleton v-if="loading" />
 
-    <div
+    <CreateCompanyNotice
       v-else-if="!recruiterCompany"
-      class="rounded-xl border border-yellow-200 bg-yellow-50 p-5 text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-950/30 dark:text-yellow-200"
-    >
-      <p class="font-medium">Create your company first.</p>
-      <p class="mt-1 text-sm">A recruiter can add jobs only after creating one company profile.</p>
-
-      <RouterLink
-        to="/recruiter/company"
-        class="mt-4 inline-flex rounded-lg bg-yellow-500 px-4 py-2 text-sm text-white transition hover:bg-yellow-600"
-      >
-        Create Company
-      </RouterLink>
-    </div>
+      message="A recruiter can add jobs only after creating one company profile."
+    />
 
     <template v-else>
-      <form
-        @submit.prevent="submitJob"
-        class="grid gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:grid-cols-2 sm:p-6 lg:grid-cols-3"
-      >
-        <div>
-          <label class="mb-2 block text-sm font-medium dark:text-gray-200">Job Title</label>
-          <input
-            v-model="form.title"
-            type="text"
-            placeholder="Frontend Developer"
-            class="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          />
-          <p v-if="errors.title" class="mt-1 text-sm text-red-500">{{ errors.title }}</p>
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium dark:text-gray-200">Location</label>
-          <input
-            v-model="form.location"
-            type="text"
-            placeholder="Remote"
-            class="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          />
-          <p v-if="errors.location" class="mt-1 text-sm text-red-500">{{ errors.location }}</p>
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium dark:text-gray-200">Type</label>
-          <select
-            v-model="form.type"
-            class="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          >
-            <option>Full Time</option>
-            <option>Part Time</option>
-            <option>Contract</option>
-            <option>Internship</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium dark:text-gray-200">Salary</label>
-          <input
-            v-model="form.salary"
-            type="text"
-            placeholder="$4k - $7k"
-            class="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          />
-          <p v-if="errors.salary" class="mt-1 text-sm text-red-500">{{ errors.salary }}</p>
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium dark:text-gray-200">Experience</label>
-          <input
-            v-model="form.experience"
-            type="text"
-            placeholder="2+ years"
-            class="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          />
-          <p v-if="errors.experience" class="mt-1 text-sm text-red-500">
-            {{ errors.experience }}
-          </p>
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium dark:text-gray-200">Status</label>
-          <select
-            v-model="form.status"
-            class="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          >
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-          </select>
-        </div>
-
-        <button
-          type="submit"
-          class="rounded-lg bg-blue-500 px-5 py-3 text-white transition hover:bg-blue-600 sm:col-span-2 lg:col-span-3"
-        >
-          Add Job
-        </button>
-      </form>
+      <RecruiterJobForm :form="form" :errors="errors" @submit="submitJob" />
 
       <div class="space-y-3">
-        <div
+        <EmptyState
           v-if="!recruiterJobs.length"
-          class="rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-500 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400"
-        >
-          No jobs added yet.
-        </div>
+          message="No jobs added yet."
+          icon="pi pi-briefcase"
+        />
 
-        <div
+        <RecruiterJobCard
           v-for="job in recruiterJobs"
           :key="job.id"
-          class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:p-5"
-        >
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h3 class="text-lg font-semibold dark:text-white">{{ job.title }}</h3>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {{ job.company }} • {{ job.location }} • {{ job.type }}
-              </p>
-              <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                {{ job.salary }} • {{ job.experience }}
-              </p>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-              <span
-                class="rounded-full px-3 py-1 text-sm"
-                :class="
-                  job.status === 'published'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-700'
-                "
-              >
-                {{ job.status }}
-              </span>
-
-              <button
-                type="button"
-                @click="togglePublish(job)"
-                class="rounded-lg border border-gray-300 px-4 py-2 text-sm transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
-              >
-                {{ job.status === 'published' ? 'Unpublish' : 'Publish' }}
-              </button>
-            </div>
-          </div>
-        </div>
+          :job="job"
+          @toggle-publish="togglePublish"
+        />
       </div>
     </template>
   </section>

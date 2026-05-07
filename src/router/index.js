@@ -8,8 +8,10 @@ import RecruiterDashboard from '@/components/recruiter/RecruiterDashboard.vue'
 import RecruiterJobManager from '@/components/recruiter/RecruiterJobManager.vue'
 
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import EmailVerificationPage from '@/pages/auth/EmailVerificationPage.vue'
 import LoginPage from '@/pages/auth/LoginPage.vue'
 import RegisterPage from '@/pages/auth/RegisterPage.vue'
+import ProfilePage from '@/pages/user/ProfilePage.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -31,6 +33,22 @@ const routes = [
     },
   },
   {
+    path: '/email/verify/:id/:hash',
+    name: 'email-verification',
+    component: EmailVerificationPage,
+    meta: {
+      public: true,
+    },
+  },
+  {
+    path: '/verify-email',
+    name: 'verify-email',
+    component: EmailVerificationPage,
+    meta: {
+      public: true,
+    },
+  },
+  {
     path: '/',
     component: DashboardLayout,
 
@@ -45,6 +63,11 @@ const routes = [
         path: 'dashboard',
         name: 'dashboard',
         redirect: '/candidate/dashboard',
+      },
+      {
+        path: 'profile',
+        name: 'profile',
+        component: ProfilePage,
       },
       {
         path: 'candidate/dashboard',
@@ -130,8 +153,29 @@ router.beforeEach(async (to) => {
   const auth = useAuthStore()
   const token = localStorage.getItem('token')
 
-  if (token && !auth.tokenVerified) {
+  if (to.meta.public) {
+    return
+  }
+
+  if (!token && auth.token) {
+    await auth.logout({ callApi: false })
+  }
+
+  if (token && (!auth.tokenVerified || auth.token !== token)) {
     await auth.verifyToken()
+  }
+
+  if (auth.hasRoleMismatch) {
+    await auth.logout({ callApi: false })
+  }
+
+  if (auth.role === 'unauthenticated' && !to.meta.guest) {
+    return {
+      name: 'login',
+      query: {
+        redirect: to.fullPath,
+      },
+    }
   }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {

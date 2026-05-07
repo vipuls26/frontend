@@ -3,16 +3,22 @@ import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
 
+import PageHeader from '@/components/baseui/PageHeader.vue'
+import StatGrid from '@/components/dashboard/StatGrid.vue'
+import NotificationPanel from '@/components/notifications/NotificationPanel.vue'
 import CardSkeleton from '@/components/skeletons/CardSkeleton.vue'
 import { useJobPortal } from '@/composables/useJobPortal'
-import { confirmAction } from '@/utils/sweetAlert'
+import { confirmAction } from '@/utils/confirmToast'
 
 const {
   applications,
   clearNotifications,
+  deleteNotification,
   loadApplications,
   loadNotifications,
   loadPublicJobs,
+  markNotificationRead,
+  markNotificationsRead,
   notifications,
   publishedJobs,
   savedJobs,
@@ -36,10 +42,8 @@ onMounted(async () => {
 const clearUserNotifications = async () => {
   const confirmed = await confirmAction({
     title: 'Clear notifications?',
-    text: 'This will delete all notifications from your account.',
+    text: 'This will permanently delete all notifications from your account.',
     confirmButtonText: 'Clear',
-    icon: 'warning',
-    confirmButtonColor: '#dc2626',
   })
 
   if (!confirmed) {
@@ -58,84 +62,98 @@ const clearUserNotifications = async () => {
     })
   }
 }
+
+const markUserNotificationsRead = async () => {
+  const confirmed = await confirmAction({
+    title: 'Mark notifications as read?',
+    text: 'This will keep notifications in your account and remove unread highlights.',
+    confirmButtonText: 'Mark read',
+  })
+
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    const message = await markNotificationsRead()
+
+    toast.success(message, {
+      id: 'notifications-marked-read',
+    })
+  } catch (error) {
+    toast.error(error.message || 'Unable to mark notifications as read', {
+      id: 'notifications-mark-read-error',
+    })
+  }
+}
+
+const deleteUserNotification = async (notification) => {
+  const confirmed = await confirmAction({
+    title: 'Delete notification?',
+    text: 'This will permanently delete this notification from your account.',
+    confirmButtonText: 'Delete',
+  })
+
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    const message = await deleteNotification(notification.id)
+
+    toast.success(message, {
+      id: `notification-deleted-${notification.id}`,
+    })
+  } catch (error) {
+    toast.error(error.message || 'Unable to delete notification', {
+      id: `notification-delete-error-${notification.id}`,
+    })
+  }
+}
+
+const markUserNotificationRead = async (notification) => {
+  try {
+    const message = await markNotificationRead(notification.id)
+
+    toast.success(message, {
+      id: `notification-marked-read-${notification.id}`,
+    })
+  } catch (error) {
+    toast.error(error.message || 'Unable to mark notification as read', {
+      id: `notification-mark-read-error-${notification.id}`,
+    })
+  }
+}
 </script>
 
 <template>
   <section class="space-y-5">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Candidate Dashboard</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Track applications, saved jobs, and published opportunities.
-        </p>
-      </div>
-
+    <PageHeader
+      title="Candidate Dashboard"
+      description="Track applications, saved jobs, and published opportunities."
+    >
       <RouterLink
         to="/jobs"
         class="w-fit rounded-lg bg-blue-500 px-4 py-2 text-sm text-white transition hover:bg-blue-600"
       >
         Browse Jobs
       </RouterLink>
-    </div>
+    </PageHeader>
 
     <div v-if="loading" class="grid gap-4 md:grid-cols-3">
       <CardSkeleton v-for="item in 3" :key="item" />
     </div>
 
-    <div v-else class="grid gap-4 md:grid-cols-3">
-      <div
-        v-for="stat in stats"
-        :key="stat.title"
-        class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
-      >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ stat.title }}</p>
-            <h2 class="mt-2 text-3xl font-bold dark:text-white">{{ stat.value }}</h2>
-          </div>
-
-          <i :class="[stat.icon, stat.color]" class="text-3xl" />
-        </div>
-      </div>
-    </div>
+    <StatGrid v-else :stats="stats" />
 
     <div class="grid gap-4 lg:grid-cols-2">
-      <div
-        class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6"
-      >
-        <div class="mb-4 flex items-center justify-between gap-3">
-          <h2 class="text-lg font-semibold dark:text-white">Notifications</h2>
-
-          <button
-            v-if="notifications.length"
-            type="button"
-            @click="clearUserNotifications"
-            class="text-sm text-blue-600 hover:underline"
-          >
-            Clear
-          </button>
-        </div>
-
-        <div v-if="!notifications.length" class="text-sm text-gray-500 dark:text-gray-400">
-          No notifications yet.
-        </div>
-
-        <div v-else class="space-y-3">
-          <div
-            v-for="notification in notifications.slice(0, 3)"
-            :key="notification.id"
-            class="rounded-lg border p-3"
-            :class="
-              notification.read
-                ? 'border-gray-200 dark:border-gray-700'
-                : 'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30'
-            "
-          >
-            <h3 class="font-medium dark:text-white">{{ notification.title }}</h3>
-            <p class="mt-1 text-sm text-gray-500">{{ notification.message }}</p>
-          </div>
-        </div>
-      </div>
+      <NotificationPanel
+        :notifications="notifications"
+        @mark-read="markUserNotificationsRead"
+        @mark-one-read="markUserNotificationRead"
+        @clear="clearUserNotifications"
+        @delete="deleteUserNotification"
+      />
 
       <div
         class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6"

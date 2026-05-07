@@ -288,6 +288,38 @@ export const useJobPortal = () => {
     }
   }
 
+  const markNotificationsRead = async () => {
+    try {
+      const response = await notificationService.markRead()
+
+      notifications.value = notifications.value.map((notification) => ({
+        ...notification,
+        read: true,
+        read_at: notification.read_at || new Date().toISOString(),
+      }))
+
+      return response.data?.message || 'Notifications marked as read.'
+    } catch (error) {
+      throw logError('notifications.markRead', error)
+    }
+  }
+
+  const markNotificationRead = async (notificationId) => {
+    try {
+      const response = await notificationService.markOneRead(notificationId)
+      const notification = notifications.value.find((item) => item.id === notificationId)
+
+      if (notification) {
+        notification.read = true
+        notification.read_at = notification.read_at || new Date().toISOString()
+      }
+
+      return response.data?.message || 'Notification marked as read.'
+    } catch (error) {
+      throw logError('notifications.markOneRead', error, { notificationId })
+    }
+  }
+
   const clearNotifications = async () => {
     try {
       const response = await notificationService.clear()
@@ -297,6 +329,20 @@ export const useJobPortal = () => {
       return response.data?.message || 'Notifications cleared.'
     } catch (error) {
       throw logError('notifications.clear', error)
+    }
+  }
+
+  const deleteNotification = async (notificationId) => {
+    try {
+      const response = await notificationService.deleteOne(notificationId)
+
+      notifications.value = notifications.value.filter(
+        (notification) => notification.id !== notificationId,
+      )
+
+      return response.data?.message || 'Notification deleted.'
+    } catch (error) {
+      throw logError('notifications.delete', error, { notificationId })
     }
   }
 
@@ -324,6 +370,9 @@ export const useJobPortal = () => {
     loadRecruiterCompany,
     loadRecruiterJobs,
     clearNotifications,
+    deleteNotification,
+    markNotificationRead,
+    markNotificationsRead,
     toggleJobPublish,
     toggleSavedJob,
     updateApplicationStatus,

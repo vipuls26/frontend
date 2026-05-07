@@ -9,7 +9,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: JSON.parse(localStorage.getItem('user') || 'null'),
     token: localStorage.getItem('token') || null,
-    role: localStorage.getItem('role') || 'candidate',
+    role: localStorage.getItem('role') || 'unauthenticated',
     loading: false,
     tokenVerified: false,
     verifyingToken: false,
@@ -17,11 +17,24 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.token,
+    isAuthenticated: (state) =>
+      state.role !== 'unauthenticated' &&
+      !!state.token &&
+      localStorage.getItem('token') === state.token,
     isCandidate: (state) => state.role === 'candidate',
     isRecruiter: (state) => state.role === 'recruiter',
     homeRoute: (state) =>
       state.role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard',
+    hasRoleMismatch: (state) => {
+      const storedRole = localStorage.getItem('role')
+      const userRole = state.user?.role
+
+      if (!state.token) {
+        return false
+      }
+
+      return state.role !== storedRole || state.role !== userRole
+    },
   },
 
   actions: {
@@ -101,8 +114,65 @@ export const useAuthStore = defineStore('auth', {
       return response
     },
 
+    async updateProfile(payload) {
+      try {
+        this.loading = true
+        this.errors = {}
+
+        const response = await authService.updateProfile(payload)
+        const data = unwrapData(response)
+        const user = data?.user || data
+
+        if (user?.id) {
+          this.user = user
+          this.role = user.role || this.role
+
+          localStorage.setItem('role', this.role)
+          localStorage.setItem('user', JSON.stringify(this.user))
+        } else {
+          await this.fetchUser()
+        }
+
+        return response
+      } catch (error) {
+        const normalized = logError('auth.updateProfile', error)
+
+        this.errors = normalized.errors
+        throw normalized
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async resendVerificationEmail() {
+      try {
+        const response = await authService.resendVerificationEmail()
+
+        return response.data?.message || 'Verification email sent.'
+      } catch (error) {
+        throw logError('auth.resendVerificationEmail', error)
+      }
+    },
+
+    async verifyEmail(id, hash, params = {}) {
+      try {
+        const response = await authService.verifyEmail(id, hash, params)
+
+        if (this.isAuthenticated) {
+          await this.fetchUser()
+        }
+
+        return response.data?.message || 'Email verified successfully.'
+      } catch (error) {
+        throw logError('auth.verifyEmail', error)
+      }
+    },
+
     async verifyToken() {
-      if (!this.token) {
+      const storedToken = localStorage.getItem('token')
+
+      if (!storedToken) {
+        await this.logout({ callApi: false })
         return false
       }
 
@@ -112,6 +182,9 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         this.verifyingToken = true
+        this.token = storedToken
+        setAuthToken(storedToken)
+
         const response = await authService.verifyToken()
         const data = unwrapData(response)
 
@@ -121,7 +194,7 @@ export const useAuthStore = defineStore('auth', {
         }
 
         this.persistAuth({
-          token: this.token,
+          token: storedToken,
           user: data.user,
         })
 
@@ -146,7 +219,7 @@ export const useAuthStore = defineStore('auth', {
 
       this.user = null
       this.token = null
-      this.role = 'candidate'
+      this.role = 'unauthenticated'
       this.errors = {}
       this.tokenVerified = false
       this.verifyingToken = false

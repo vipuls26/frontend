@@ -5,6 +5,9 @@ import { useForm } from 'vee-validate'
 
 import * as yup from 'yup'
 
+import BaseButton from '@/components/baseui/BaseButton.vue'
+import BaseInput from '@/components/baseui/BaseInput.vue'
+
 const props = defineProps({
   show: {
     type: Boolean,
@@ -132,46 +135,25 @@ onBeforeUnmount(() => {
           {{ submitError }}
         </p>
 
-        <!-- Full Name -->
-        <div>
-          <label for="full_name" class="mb-2 block text-sm font-medium dark:text-gray-200">
-            Full Name
-          </label>
+        <BaseInput
+          id="full_name"
+          ref="fullNameInput"
+          v-model="full_name"
+          label="Full Name"
+          placeholder="Enter full name"
+          :disabled="submitting"
+          :error="errors.full_name"
+        />
 
-          <input
-            id="full_name"
-            ref="fullNameInput"
-            v-model="full_name"
-            type="text"
-            placeholder="Enter full name"
-            :disabled="submitting"
-            class="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white disabled:cursor-not-allowed disabled:opacity-70"
-          />
-
-          <p v-if="errors.full_name" class="mt-1 text-sm text-red-500">
-            {{ errors.full_name }}
-          </p>
-        </div>
-
-        <!-- Email -->
-        <div>
-          <label for="email" class="mb-2 block text-sm font-medium dark:text-gray-200">
-            Email
-          </label>
-
-          <input
-            id="email"
-            v-model="email"
-            type="email"
-            placeholder="Enter email"
-            :disabled="submitting"
-            class="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white disabled:cursor-not-allowed disabled:opacity-70"
-          />
-
-          <p v-if="errors.email" class="mt-1 text-sm text-red-500">
-            {{ errors.email }}
-          </p>
-        </div>
+        <BaseInput
+          id="email"
+          v-model="email"
+          label="Email"
+          type="email"
+          placeholder="Enter email"
+          :disabled="submitting"
+          :error="errors.email"
+        />
 
         <!-- Cover Letter -->
         <div>
@@ -204,13 +186,7 @@ onBeforeUnmount(() => {
             Cancel
           </button>
 
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="flex-1 rounded-lg bg-blue-500 py-3 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {{ submitting ? 'Applying...' : 'Apply Now' }}
-          </button>
+          <BaseButton :loading="submitting" text="Apply Now" />
         </div>
       </form>
     </div>
