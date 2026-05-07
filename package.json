@@ -13,7 +13,6 @@
     "axios": "^1.16.0",
     "pinia": "^3.0.4",
     "primeicons": "^7.0.0",
-    "sweetalert2": "^11.26.24",
     "vee-validate": "^4.15.1",
     "vue": "beta",
     "vue-router": "^5.0.4",

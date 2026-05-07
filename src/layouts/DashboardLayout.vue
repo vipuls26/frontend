@@ -1,4 +1,6 @@
 <script setup>
+import EmailVerificationBanner from '@/components/auth/EmailVerificationBanner.vue'
+
 import AppNavbar from './AppNavbar.vue'
 import AppSidebar from './AppSidebar.vue'
 </script>
@@ -11,6 +13,8 @@ import AppSidebar from './AppSidebar.vue'
       <AppSidebar />
 
       <main class="min-w-0 flex-1 px-4 py-5 pb-24 sm:px-6 lg:px-8 md:pb-8">
+        <EmailVerificationBanner />
+
         <router-view />
       </main>
     </div>

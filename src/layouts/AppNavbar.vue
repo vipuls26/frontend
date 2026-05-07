@@ -1,15 +1,49 @@
 <script setup>
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import DarkModeTheme from '@/components/baseui/DarkModeTheme.vue'
 import { useAuthStore } from '@/stores/authStore'
-import { confirmAction } from '@/utils/sweetAlert'
+import { confirmAction } from '@/utils/confirmToast'
 
 const router = useRouter()
 const auth = useAuthStore()
+const menuOpen = ref(false)
+
+const initials = computed(() =>
+  (auth.user?.name || auth.role || 'U')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join(''),
+)
+
+const closeMenu = () => {
+  menuOpen.value = false
+}
+
+const goToProfile = () => {
+  closeMenu()
+  router.push('/profile')
+}
+
+const handleEscape = (event) => {
+  if (event.key === 'Escape') {
+    closeMenu()
+  }
+}
+
+window.addEventListener('keydown', handleEscape)
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleEscape)
+})
 
 const logout = async () => {
+  closeMenu()
+
   const confirmed = await confirmAction({
     title: 'Logout?',
     text: 'You will need to sign in again to access your dashboard.',
@@ -53,20 +87,72 @@ const logout = async () => {
     <div class="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
       <DarkModeTheme />
 
-      <span
-        class="hidden h-9 items-center rounded-full bg-blue-50 px-3 text-xs font-medium capitalize text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 sm:inline-flex"
-      >
-        {{ auth.role }}
-      </span>
+      <div class="relative">
+        <button
+          type="button"
+          @click="menuOpen = !menuOpen"
+          class="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 sm:px-3"
+          aria-haspopup="menu"
+          :aria-expanded="menuOpen"
+        >
+          <span
+            class="grid h-7 w-7 place-items-center rounded-full bg-blue-600 text-xs font-semibold text-white"
+          >
+            {{ initials }}
+          </span>
 
-      <button
-        type="button"
-        @click="logout"
-        class="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3 text-sm font-medium text-red-700 transition hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300 sm:px-4"
-      >
-        <span class="hidden sm:inline">Logout</span>
-        <i class="pi pi-sign-out sm:hidden" />
-      </button>
+          <span class="hidden max-w-28 truncate sm:inline">
+            {{ auth.user?.name || auth.role }}
+          </span>
+
+          <i class="pi pi-chevron-down text-xs" />
+        </button>
+
+        <div
+          v-if="menuOpen"
+          class="absolute right-0 mt-2 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-800 dark:bg-slate-900"
+          role="menu"
+        >
+          <div class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+            <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">
+              {{ auth.user?.name || 'Profile' }}
+            </p>
+            <p class="truncate text-xs capitalize text-slate-500 dark:text-slate-400">
+              {{ auth.role }} workspace
+            </p>
+          </div>
+
+          <button
+            type="button"
+            @click="goToProfile"
+            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+            role="menuitem"
+          >
+            <i class="pi pi-user-edit text-slate-500" />
+            Edit profile
+          </button>
+
+          <button
+            type="button"
+            @click="goToProfile"
+            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+            role="menuitem"
+          >
+            <i class="pi pi-lock text-slate-500" />
+            Change password
+          </button>
+
+          <button
+            type="button"
+            @click="logout"
+            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30"
+            role="menuitem"
+          >
+            <i class="pi pi-sign-out" />
+            Logout
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 </template>

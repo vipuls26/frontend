@@ -4,9 +4,11 @@ import { computed, ref } from 'vue'
 import { formatErrorMessage } from '@/utils/apiResponse'
 
 const props = defineProps({
+  id: String,
   label: String,
   modelValue: String,
   type: String,
+  disabled: Boolean,
   error: {
     type: [String, Array, Object],
     default: '',
@@ -17,6 +19,7 @@ const props = defineProps({
 defineEmits(['update:modelValue'])
 
 const showPassword = ref(false)
+const input = ref(null)
 
 const inputType = computed(() => {
   if (props.type === 'password') {
@@ -27,6 +30,10 @@ const inputType = computed(() => {
 })
 
 const errorMessage = computed(() => formatErrorMessage(props.error))
+
+defineExpose({
+  focus: () => input.value?.focus(),
+})
 </script>
 
 <template>
@@ -37,17 +44,24 @@ const errorMessage = computed(() => formatErrorMessage(props.error))
 
     <div class="relative">
       <input
+        :id="id"
+        ref="input"
         :type="inputType"
         :value="modelValue"
         :placeholder="placeholder"
+        :disabled="disabled"
         @input="$emit('update:modelValue', $event.target.value)"
         class="app-field"
-        :class="type === 'password' ? 'pr-12' : ''"
+        :class="[
+          type === 'password' ? 'pr-12' : '',
+          disabled ? 'cursor-not-allowed opacity-70' : '',
+        ]"
       />
 
       <button
         v-if="type === 'password'"
         type="button"
+        :disabled="disabled"
         class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-all duration-300 hover:scale-110 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
         @click="showPassword = !showPassword"
       >

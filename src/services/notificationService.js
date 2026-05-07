@@ -5,7 +5,19 @@ export const notificationService = {
     return api.get('/notifications')
   },
 
-  clear() {
+  markRead() {
     return api.patch('/notifications/read')
+  },
+
+  markOneRead(notificationId) {
+    return api.patch(`/notifications/${notificationId}/read`)
+  },
+
+  clear() {
+    return api.delete('/notifications')
+  },
+
+  deleteOne(notificationId) {
+    return api.delete(`/notifications/${notificationId}`)
   },
 }

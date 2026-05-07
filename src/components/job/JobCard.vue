@@ -1,5 +1,9 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+import { formatDate, formatSalary } from '@/utils/formatters'
+
+const props = defineProps({
   job: {
     type: Object,
     required: true,
@@ -17,6 +21,9 @@ defineProps({
 })
 
 defineEmits(['apply', 'toggle-save'])
+
+const displaySalary = computed(() => formatSalary(props.job.salary))
+const postedDate = computed(() => formatDate(props.job.posted))
 </script>
 
 <template>
@@ -40,7 +47,7 @@ defineEmits(['apply', 'toggle-save'])
           </span>
 
           <span class="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">
-            {{ job.salary }}
+            {{ displaySalary }}
           </span>
 
           <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
@@ -48,7 +55,7 @@ defineEmits(['apply', 'toggle-save'])
           </span>
         </div>
 
-        <p class="mt-3 text-sm text-slate-400">Posted {{ job.posted }}</p>
+        <p v-if="postedDate" class="mt-3 text-sm text-slate-400">Posted {{ postedDate }}</p>
       </div>
 
       <div class="grid grid-cols-[40px_1fr] gap-2 sm:flex sm:self-start">
